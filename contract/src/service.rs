@@ -15,14 +15,13 @@ impl WithServiceAbi for CascadeProtocolService {
 }
 
 impl Service for CascadeProtocolService {
-    type Error = linera_views::views::ViewError;
-    type State = CascadeProtocol<ServiceRuntime>;
+    type Parameters = ();
 
-    async fn new(state: Self::State, _runtime: ServiceRuntime) -> Result<Self, Self::Error> {
-        Ok(CascadeProtocolService { state })
+    async fn new(state: CascadeProtocol<ServiceRuntime>) -> Self {
+        CascadeProtocolService { state }
     }
 
-    async fn handle_query(&self, request: Request) -> Result<Response, Self::Error> {
+    async fn handle_query(&self, request: Request) -> Response {
         // Create GraphQL schema
         let schema = Schema::build(
             self.state.clone(),
@@ -32,7 +31,7 @@ impl Service for CascadeProtocolService {
         .finish();
 
         // Execute the query
-        Ok(schema.execute(request).await)
+        schema.execute(request).await
     }
 }
 
