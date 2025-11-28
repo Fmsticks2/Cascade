@@ -1,0 +1,5 @@
+{
+  "name": "Cascade Protocol",
+  "description": "An AI-enhanced prediction market platform where markets dynamically spawn conditional sub-markets in a cascading network.",
+  "requestFramePermissions": []
+}
