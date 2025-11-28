@@ -1,4 +1,4 @@
-use async_graphql::{Object, SimpleObject};
+use async_graphql::{Enum, Object, SimpleObject};
 use linera_sdk::base::Owner;
 use linera_views::{
     common::Context,
@@ -11,8 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::msg::MarketCategory;
 
 /// Market status enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, SimpleObject)]
-#[graphql(name = "MarketStatus")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Enum)]
 pub enum MarketStatus {
     Active,
     Resolved,
