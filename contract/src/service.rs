@@ -1,37 +1,32 @@
 use async_graphql::{EmptyMutation, EmptySubscription, Request, Response, Schema};
-use linera_sdk::{base::WithServiceAbi, Service, ServiceRuntime};
+use linera_sdk::{base::WithServiceAbi, views::View, Service, ServiceRuntime};
 
 use crate::state::CascadeProtocol;
 
 /// The service implementation for Cascade Protocol (GraphQL queries)
 pub struct CascadeProtocolService {
-    state: CascadeProtocol<ServiceRuntime>,
+    schema: Schema<CascadeProtocol, EmptyMutation, EmptySubscription>,
 }
 
-linera_sdk::service!(CascadeProtocolService);
+ 
 
 impl WithServiceAbi for CascadeProtocolService {
-    type Abi = crate::contract::CascadeProtocolAbi;
+    type Abi = crate::CascadeProtocolAbi;
 }
 
 impl Service for CascadeProtocolService {
     type Parameters = ();
 
-    async fn new(state: CascadeProtocol<ServiceRuntime>) -> Self {
-        CascadeProtocolService { state }
+    async fn new(runtime: ServiceRuntime<CascadeProtocolService>) -> Self {
+        let state = CascadeProtocol::load(runtime.root_view_storage_context())
+            .await
+            .expect("failed to load state");
+        let schema = Schema::build(state, EmptyMutation, EmptySubscription).finish();
+        CascadeProtocolService { schema }
     }
 
     async fn handle_query(&self, request: Request) -> Response {
-        // Create GraphQL schema
-        let schema = Schema::build(
-            self.state.clone(),
-            EmptyMutation,
-            EmptySubscription,
-        )
-        .finish();
-
-        // Execute the query
-        schema.execute(request).await
+        self.schema.execute(request).await
     }
 }
 

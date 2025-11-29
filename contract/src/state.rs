@@ -1,11 +1,11 @@
 use async_graphql::{Enum, Object, SimpleObject};
 use linera_sdk::base::Owner;
 use linera_views::{
-    common::Context,
     map_view::MapView,
     register_view::RegisterView,
-    views::{RootView, View, ViewError},
+    views::{RootView, ViewError},
 };
+use linera_sdk::views::ViewStorageContext;
 use serde::{Deserialize, Serialize};
 
 use crate::msg::MarketCategory;
@@ -71,28 +71,25 @@ pub struct Bet {
 /// Root application state
 #[derive(RootView)]
 #[view(context = "ViewStorageContext")]
-pub struct CascadeProtocol<C> {
+pub struct CascadeProtocol {
     /// Admin account that can resolve markets
-    pub admin: RegisterView<C, Owner>,
+    pub admin: RegisterView<ViewStorageContext, Option<Owner>>,
     
     /// Counter for generating unique IDs
-    pub id_counter: RegisterView<C, u64>,
+    pub id_counter: RegisterView<ViewStorageContext, u64>,
     
     /// All markets indexed by market ID
-    pub markets: MapView<C, String, Market>,
+    pub markets: MapView<ViewStorageContext, String, Market>,
     
     /// All bets indexed by owner, then by bet ID
-    pub bets_by_owner: MapView<C, Owner, Vec<Bet>>,
+    pub bets_by_owner: MapView<ViewStorageContext, Owner, Vec<Bet>>,
     
     /// All bets indexed by market ID for efficient lookups
-    pub bets_by_market: MapView<C, String, Vec<Bet>>,
+    pub bets_by_market: MapView<ViewStorageContext, String, Vec<Bet>>,
 }
 
 #[Object]
-impl<C: Context + Send + Sync + Clone + 'static> CascadeProtocol<C>
-where
-    ViewError: From<C::Error>,
-{
+impl CascadeProtocol {
     /// Get all markets
     async fn markets(&self) -> Result<Vec<Market>, ViewError> {
         let mut result = Vec::new();
@@ -125,19 +122,15 @@ where
     }
     
     /// Get the current admin
-    async fn admin(&self) -> Result<Owner, ViewError> {
-        self.admin.get().await
+    async fn admin(&self) -> Result<Option<Owner>, ViewError> {
+        Ok(self.admin.get().clone())
     }
 }
 
-impl<C> CascadeProtocol<C>
-where
-    C: Context + Send + Sync + Clone,
-    ViewError: From<C::Error>,
-{
+impl CascadeProtocol {
     /// Generate a new unique ID
     pub async fn generate_id(&mut self) -> Result<String, ViewError> {
-        let current = self.id_counter.get().await;
+        let current = self.id_counter.get();
         let next = current + 1;
         self.id_counter.set(next);
         Ok(format!("id_{}", next))
@@ -145,13 +138,13 @@ where
     
     /// Add a market to storage
     pub async fn add_market(&mut self, market: Market) -> Result<(), ViewError> {
-        self.markets.insert(&market.id, market)?;
+        self.markets.insert(&market.id.clone(), market)?;
         Ok(())
     }
     
     /// Update an existing market
     pub async fn update_market(&mut self, market: Market) -> Result<(), ViewError> {
-        self.markets.insert(&market.id, market)?;
+        self.markets.insert(&market.id.clone(), market)?;
         Ok(())
     }
     

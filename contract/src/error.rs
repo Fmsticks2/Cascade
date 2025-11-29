@@ -1,4 +1,3 @@
-use linera_sdk::base::ContractRuntime;
 use thiserror::Error;
 
 /// Custom error types for the Cascade Protocol application
@@ -49,6 +48,5 @@ pub enum CascadeProtocolError {
     #[error("BCS serialization error: {0}")]
     BcsError(#[from] bcs::Error),
     
-    #[error(transparent)]
-    RuntimeError(#[from] linera_sdk::contract::system_api::Error<ContractRuntime>),
+ 
 }

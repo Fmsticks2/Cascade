@@ -1,4 +1,5 @@
 use linera_sdk::base::Owner;
+use async_graphql::Enum;
 use serde::{Deserialize, Serialize};
 
 /// Initialization argument for the application
@@ -9,7 +10,7 @@ pub struct InstantiationArgument {
 }
 
 /// Market category classification
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Enum)]
 pub enum MarketCategory {
     Crypto,
     Politics,
