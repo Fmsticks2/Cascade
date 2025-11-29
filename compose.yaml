@@ -3,9 +3,11 @@ services:
     build: .
     environment:
     - DEPLOY_MODE=local
+    - WEB_PORT=${WEB_PORT:-5173}
+    - FAUCET_PORT=${FAUCET_PORT:-18080}
     ports:
-    - "5173:5173" # Web app
-    - "8080:8080" # faucet
+    - "${WEB_PORT:-5173}:5173" # Web app
+    - "${FAUCET_PORT:-18080}:8080" # faucet
     - "9001:9001" # shard proxy
     - "13001:13001" # shard
     volumes:
