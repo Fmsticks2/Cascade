@@ -1,13 +1,14 @@
 services:
   app:
     build: .
+    restart: unless-stopped
     environment:
     - DEPLOY_MODE=local
     - WEB_PORT=${WEB_PORT:-5173}
     - FAUCET_PORT=${FAUCET_PORT:-18080}
     ports:
-    - "${WEB_PORT:-5173}:5173" # Web app
-    - "${FAUCET_PORT:-18080}:8080" # faucet
+    - "${WEB_PORT:-5173}:${WEB_PORT:-5173}" # Web app
+    - "${FAUCET_PORT:-18080}:${FAUCET_PORT:-18080}" # faucet
     - "9001:9001" # shard proxy
     - "13001:13001" # shard
     volumes:
