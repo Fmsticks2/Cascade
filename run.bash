@@ -63,6 +63,7 @@ fi
 cd /build
 export NVM_DIR="/root/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" || true
+nvm use --lts >/dev/null 2>&1 || nvm use lts/krypton >/dev/null 2>&1 || nvm use default >/dev/null 2>&1 || true
 PNPM_BIN=$(command -v pnpm || true)
 [ -z "$PNPM_BIN" ] && PNPM_BIN=$(find "$NVM_DIR" -type f -name pnpm | head -n 1 || true)
 NPX_BIN=$(command -v npx || true)
@@ -80,11 +81,35 @@ echo "Frontend: http://localhost:$WEB_PORT"
 echo "Faucet: $FAUCET_URL"
 echo "Application ID: $APP_ID"
 if [ -n "$PNPM_BIN" ]; then
-  exec "$PNPM_BIN" dev -- --host 0.0.0.0 --port "$WEB_PORT"
+  "$PNPM_BIN" dev -- --host 0.0.0.0 --port "$WEB_PORT" &
 else
   if [ -n "$NPX_BIN" ]; then
-    exec "$NPX_BIN" --yes vite -- --host 0.0.0.0 --port "$WEB_PORT"
+    "$NPX_BIN" --yes vite -- --host 0.0.0.0 --port "$WEB_PORT" &
   else
-    exec node node_modules/vite/bin/vite.js --host 0.0.0.0 --port "$WEB_PORT"
+    node node_modules/vite/bin/vite.js --host 0.0.0.0 --port "$WEB_PORT" &
   fi
+fi
+for i in $(seq 1 90); do curl -sf "http://localhost:$WEB_PORT" >/dev/null && break || sleep 1; done
+if ! curl -sf "http://localhost:$WEB_PORT" >/dev/null; then
+  pkill -f "vite" || true
+  if [ -n "$PNPM_BIN" ]; then
+    "$PNPM_BIN" build || true
+  else
+    if [ -n "$NPX_BIN" ]; then
+      "$NPX_BIN" --yes vite build || npm run build || true
+    else
+      npm run build || true
+    fi
+  fi
+  if [ -n "$PNPM_BIN" ]; then
+    exec "$PNPM_BIN" preview -- --host 0.0.0.0 --port "$WEB_PORT"
+  else
+    if [ -n "$NPX_BIN" ]; then
+      exec "$NPX_BIN" --yes vite preview -- --host 0.0.0.0 --port "$WEB_PORT"
+    else
+      exec node node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port "$WEB_PORT"
+    fi
+  fi
+else
+  wait
 fi

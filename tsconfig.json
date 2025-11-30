@@ -25,5 +25,8 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "references": [
+    { "path": "./tsconfig.node.json" }
+  ]
 }

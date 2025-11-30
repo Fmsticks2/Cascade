@@ -1,12 +1,13 @@
-import path from 'path';
+import path from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const port = Number(process.env.WEB_PORT ?? env.WEB_PORT ?? 5173);
     return {
       server: {
-        port: 3000,
+        port,
         host: '0.0.0.0',
       },
       plugins: [react()],
