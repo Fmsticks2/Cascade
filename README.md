@@ -1,7 +1,6 @@
 
 # Cascade Protocol
 
-![Cascade Protocol](https://via.placeholder.com/1200x400/0f172a/2dd4bf?text=CASCADE+PROTOCOL)
 
 **Cascade Protocol** is a next-generation, AI-enhanced prediction market platform designed to visualize and interact with the complex causality of future events. Unlike traditional flat prediction markets, Cascade markets allow for the dynamic spawning of conditional sub-markets ("Child Markets"), creating an evolving tree-like network of interrelated predictions.
 
