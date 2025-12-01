@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 MODE="${DEPLOY_MODE:-${1:-local}}"
 WEB_PORT="${WEB_PORT:-5173}"
@@ -14,7 +14,8 @@ rustup target add wasm32-unknown-unknown >/dev/null 2>&1 || true
 cargo build --release --target wasm32-unknown-unknown
 
 if [ "$MODE" = "local" ]; then
-  linera net up --with-faucet --faucet-port "$FAUCET_PORT" &
+  nohup linera net up --with-faucet --faucet-port "$FAUCET_PORT" > /build/faucet.log 2>&1 &
+  disown
   # Wait for faucet to respond before any wallet operations
   for i in $(seq 1 60); do
     curl -sf "http://localhost:$FAUCET_PORT" >/dev/null && break || sleep 1
@@ -30,9 +31,11 @@ fi
 if [ ! -f "$LINERA_WALLET" ] || ! grep -q '"default"' "$LINERA_WALLET"; then
   linera wallet request-chain --faucet "$FAUCET_URL" || true
 fi
+echo "Wallet initialized and default chain ensured"
 
 CONTRACT_WASM="/build/contract/target/wasm32-unknown-unknown/release/cascade_protocol.wasm"
 SERVICE_WASM="$CONTRACT_WASM"
+echo "Publishing contract and service blobs"
 
 # Publish blobs and then create application to avoid missing blob errors
 CONTRACT_BLOB=$(linera publish "$CONTRACT_WASM" 2>&1 | grep -Eo '[0-9a-fA-F]{64}' | tail -n 1 || true)
@@ -44,6 +47,7 @@ if [ -z "$CONTRACT_BLOB" ] || [ -z "$SERVICE_BLOB" ]; then
 else
   APP_OUT=$(linera create-application "$CONTRACT_BLOB" "$SERVICE_BLOB" 2>&1 || true)
 fi
+echo "Application creation output captured"
 
 APP_ID=$(echo "$APP_OUT" | grep -Eo 'ApplicationId\{[^}]+\}|[0-9a-fA-F-]{16,}' | tail -n 1 || true)
 [ -n "$APP_ID" ] || APP_ID=$(echo "$APP_OUT" | tail -n 1)
@@ -59,14 +63,18 @@ if grep -q '^VITE_LINERA_APPLICATION_ID=' /build/.env 2>/dev/null; then
 else
   echo "VITE_LINERA_APPLICATION_ID=$APP_ID" >> /build/.env
 fi
+echo ".env updated with faucet and application id"
 
 cd /build
+echo "Entered /build directory"
 export NVM_DIR="/root/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" || true
+nvm --version >/dev/null 2>&1 || echo "NVM not found; continuing"
 nvm use --lts >/dev/null 2>&1 || nvm use lts/krypton >/dev/null 2>&1 || nvm use default >/dev/null 2>&1 || true
 PNPM_BIN=$(command -v pnpm || true)
 [ -z "$PNPM_BIN" ] && PNPM_BIN=$(find "$NVM_DIR" -type f -name pnpm | head -n 1 || true)
 NPX_BIN=$(command -v npx || true)
+echo "Starting frontend dependency install"
 if [ -n "$PNPM_BIN" ]; then
   "$PNPM_BIN" install || true
 else
@@ -77,39 +85,24 @@ else
   fi
 fi
 for i in $(seq 1 30); do curl -sf "$FAUCET_URL" >/dev/null && break || sleep 1; done
+echo "Starting frontend build and preview"
 echo "Frontend: http://localhost:$WEB_PORT"
 echo "Faucet: $FAUCET_URL"
 echo "Application ID: $APP_ID"
+# Always serve via preview for stability on bind-mounted volumes
 if [ -n "$PNPM_BIN" ]; then
-  "$PNPM_BIN" dev -- --host 0.0.0.0 --port "$WEB_PORT" &
+  "$PNPM_BIN" build || npm run build || true
+  nohup "$PNPM_BIN" preview -- --host 0.0.0.0 --port "$WEB_PORT" > /build/preview.log 2>&1 &
+  disown
 else
   if [ -n "$NPX_BIN" ]; then
-    "$NPX_BIN" --yes vite -- --host 0.0.0.0 --port "$WEB_PORT" &
+    "$NPX_BIN" --yes vite build || npm run build || true
+    nohup "$NPX_BIN" --yes vite preview -- --host 0.0.0.0 --port "$WEB_PORT" > /build/preview.log 2>&1 &
+    disown
   else
-    node node_modules/vite/bin/vite.js --host 0.0.0.0 --port "$WEB_PORT" &
+    npm run build || true
+    nohup node node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port "$WEB_PORT" > /build/preview.log 2>&1 &
+    disown
   fi
 fi
-for i in $(seq 1 90); do curl -sf "http://localhost:$WEB_PORT" >/dev/null && break || sleep 1; done
-if ! curl -sf "http://localhost:$WEB_PORT" >/dev/null; then
-  pkill -f "vite" || true
-  if [ -n "$PNPM_BIN" ]; then
-    "$PNPM_BIN" build || true
-  else
-    if [ -n "$NPX_BIN" ]; then
-      "$NPX_BIN" --yes vite build || npm run build || true
-    else
-      npm run build || true
-    fi
-  fi
-  if [ -n "$PNPM_BIN" ]; then
-    exec "$PNPM_BIN" preview -- --host 0.0.0.0 --port "$WEB_PORT"
-  else
-    if [ -n "$NPX_BIN" ]; then
-      exec "$NPX_BIN" --yes vite preview -- --host 0.0.0.0 --port "$WEB_PORT"
-    else
-      exec node node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port "$WEB_PORT"
-    fi
-  fi
-else
-  wait
-fi
+tail -f /build/preview.log

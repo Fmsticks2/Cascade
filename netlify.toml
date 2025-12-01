@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[template.environment]
+  VITE_LINERA_FAUCET_URL = "https://faucet.testnet-conway.linera.net"
+  VITE_LINERA_APPLICATION_ID = ""
+
