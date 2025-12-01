@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set +e
 
 MODE="${DEPLOY_MODE:-${1:-local}}"
-WEB_PORT="${WEB_PORT:-5173}"
+WEB_PORT="${WEB_PORT:-4173}"
 FAUCET_PORT="${FAUCET_PORT:-18080}"
 
 export LINERA_WALLET="/build/linera-cli/wallet.json"
@@ -90,19 +90,8 @@ echo "Frontend: http://localhost:$WEB_PORT"
 echo "Faucet: $FAUCET_URL"
 echo "Application ID: $APP_ID"
 # Always serve via preview for stability on bind-mounted volumes
-if [ -n "$PNPM_BIN" ]; then
-  "$PNPM_BIN" build || npm run build || true
-  nohup "$PNPM_BIN" preview -- --host 0.0.0.0 --port "$WEB_PORT" > /build/preview.log 2>&1 &
-  disown
-else
-  if [ -n "$NPX_BIN" ]; then
-    "$NPX_BIN" --yes vite build || npm run build || true
-    nohup "$NPX_BIN" --yes vite preview -- --host 0.0.0.0 --port "$WEB_PORT" > /build/preview.log 2>&1 &
-    disown
-  else
-    npm run build || true
-    nohup node node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port "$WEB_PORT" > /build/preview.log 2>&1 &
-    disown
-  fi
-fi
-tail -f /build/preview.log
+npm run build || node node_modules/vite/bin/vite.js build || true
+nohup node node_modules/vite/bin/vite.js preview --port "$WEB_PORT" --host 0.0.0.0 > /build/preview.log 2>&1 &
+disown
+touch /build/preview.log
+tail -F /build/preview.log
