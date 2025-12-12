@@ -1,5 +1,6 @@
 
-import { Market, Bet, User, Outcome, MarketCategory, HistoryPoint, LeaderboardEntry } from '../types';
+import { Market, Bet, User, Outcome, MarketCategory, MarketStatus, HistoryPoint, LeaderboardEntry } from '../types';
+import { isLineraConfigured, queryApplication } from './lineraClient';
 
 // Helper to generate mock history
 const generateHistory = (outcomes: Outcome[], createdAt: number): HistoryPoint[] => {
@@ -429,6 +430,55 @@ export const lineraService = {
   },
 
   getAllMarkets: async (): Promise<Market[]> => {
+    // If Linera is configured, fetch from on-chain GraphQL service
+    if (isLineraConfigured()) {
+      try {
+        const gql = `query { markets { id question outcomes { id name total_staked } total_staked status expiry_time winning_outcome_id parent_id category } }`;
+        const raw = await queryApplication(gql);
+        const resp = JSON.parse(raw);
+        const chainMarkets = (resp?.data?.markets ?? []) as Array<any>;
+
+        // Map chain data to frontend Market shape
+        const mapped: Market[] = chainMarkets.map((m: any) => {
+          const totalStaked = Number(m.total_staked || 0);
+          const outcomes: Outcome[] = (m.outcomes || []).map((o: any) => {
+            const staked = Number(o.total_staked || 0);
+            const odds = totalStaked > 0 ? Math.round((staked / totalStaked) * 100) : 0;
+            return { id: o.id, name: o.name, odds, totalStaked: staked };
+          });
+          const createdAt = Date.now();
+          const priceHistory = generateHistory(outcomes, createdAt);
+          return {
+            id: m.id,
+            question: m.question,
+            outcomes,
+            totalStaked,
+            status: m.status as MarketStatus,
+            expiryTime: Number(m.expiry_time || 0),
+            winningOutcomeId: m.winning_outcome_id || undefined,
+            parentId: m.parent_id || undefined,
+            childMarketIds: [],
+            createdAt,
+            category: m.category as MarketCategory,
+            priceHistory
+          } as Market;
+        });
+
+        // Populate childMarketIds based on parentId relationships
+        const byId: Record<string, Market> = {};
+        mapped.forEach(m => { byId[m.id] = m; });
+        mapped.forEach(m => {
+          if (m.parentId && byId[m.parentId]) {
+            byId[m.parentId].childMarketIds.push(m.id);
+          }
+        });
+
+        return mapped;
+      } catch (e) {
+        console.error('Chain query failed, falling back to mock:', e);
+      }
+    }
+    // Fallback to mock
     await new Promise((resolve) => setTimeout(resolve, 500));
     return [...MOCK_MARKETS];
   },

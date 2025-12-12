@@ -43,7 +43,7 @@ pub enum CascadeProtocolError {
     NotWinningOutcome,
     
     #[error("View error: {0}")]
-    ViewError(#[from] linera_views::views::ViewError),
+    ViewError(#[from] linera_sdk::views::ViewError),
     
     #[error("BCS serialization error: {0}")]
     BcsError(#[from] bcs::Error),

@@ -11,7 +11,10 @@ export LINERA_STORAGE="rocksdb:/build/linera-cli/linera.db"
 
 cd /build/contract
 rustup target add wasm32-unknown-unknown >/dev/null 2>&1 || true
-cargo build --release --target wasm32-unknown-unknown
+cargo build --release --target wasm32-unknown-unknown --features contract
+cp target/wasm32-unknown-unknown/release/cascade_protocol.wasm target/wasm32-unknown-unknown/release/cascade_protocol_contract.wasm
+cargo build --release --target wasm32-unknown-unknown --features service
+cp target/wasm32-unknown-unknown/release/cascade_protocol.wasm target/wasm32-unknown-unknown/release/cascade_protocol_service.wasm
 
 if [ "$MODE" = "local" ]; then
   nohup linera net up --with-faucet --faucet-port "$FAUCET_PORT" > /build/faucet.log 2>&1 &
@@ -33,8 +36,8 @@ if [ ! -f "$LINERA_WALLET" ] || ! grep -q '"default"' "$LINERA_WALLET"; then
 fi
 echo "Wallet initialized and default chain ensured"
 
-CONTRACT_WASM="/build/contract/target/wasm32-unknown-unknown/release/cascade_protocol.wasm"
-SERVICE_WASM="$CONTRACT_WASM"
+CONTRACT_WASM="/build/contract/target/wasm32-unknown-unknown/release/cascade_protocol_contract.wasm"
+SERVICE_WASM="/build/contract/target/wasm32-unknown-unknown/release/cascade_protocol_service.wasm"
 echo "Publishing contract and service blobs"
 
 # Publish blobs and then create application to avoid missing blob errors

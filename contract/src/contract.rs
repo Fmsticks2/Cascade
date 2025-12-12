@@ -1,5 +1,5 @@
 use linera_sdk::{
-    base::{Account, Amount, Owner, WithContractAbi},
+    linera_base_types::{Account, Amount},
     views::{RootView, View},
     Contract, ContractRuntime,
 };
@@ -18,7 +18,7 @@ pub struct CascadeProtocolContract {
 
  
 
-impl WithContractAbi for CascadeProtocolContract {
+impl linera_sdk::abi::WithContractAbi for CascadeProtocolContract {
     type Abi = crate::CascadeProtocolAbi;
 }
 
@@ -26,6 +26,7 @@ impl Contract for CascadeProtocolContract {
     type Message = Message;
     type Parameters = ();
     type InstantiationArgument = InstantiationArgument;
+    type EventValue = ();
 
     async fn load(runtime: ContractRuntime<CascadeProtocolContract>) -> Self {
         let state = CascadeProtocol::load(runtime.root_view_storage_context())
@@ -99,7 +100,9 @@ impl Contract for CascadeProtocolContract {
     }
 
     async fn store(mut self) {
-        self.state.save().await.expect("Failed to save state");
+        RootView::save(&mut self.state)
+            .await
+            .expect("Failed to save state");
     }
 }
 
@@ -203,9 +206,9 @@ impl CascadeProtocolContract {
         market.total_staked += amount;
 
         // Transfer tokens from user to contract
-        let app_chain_id = self.runtime.application_id().creation.chain_id;
+        let app_chain_id = self.runtime.chain_id();
         self.runtime.transfer(
-            None,
+            caller,
             Account::chain(app_chain_id),
             Amount::from_tokens(amount.into()),
         );
@@ -339,9 +342,9 @@ impl CascadeProtocolContract {
         }
 
         // Transfer winnings to user
-        let app_chain_id = self.runtime.application_id().creation.chain_id;
+        let app_chain_id = self.runtime.chain_id();
         self.runtime.transfer(
-            Some(caller),
+            caller,
             Account::chain(app_chain_id),
             Amount::from_tokens(payout.into()),
         );

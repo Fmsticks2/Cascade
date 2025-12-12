@@ -1,11 +1,9 @@
 use async_graphql::{Enum, Object, SimpleObject};
-use linera_sdk::base::Owner;
-use linera_views::{
-    map_view::MapView,
-    register_view::RegisterView,
-    views::{RootView, ViewError},
+use linera_sdk::{
+    linera_base_types::AccountOwner,
+    views::{MapView, RegisterView, RootView, View, ViewError},
+    ViewStorageContext,
 };
-use linera_sdk::views::ViewStorageContext;
 use serde::{Deserialize, Serialize};
 
 use crate::msg::MarketCategory;
@@ -61,7 +59,7 @@ impl Market {
 #[graphql(name = "Bet")]
 pub struct Bet {
     pub id: String,
-    pub owner: Owner,
+    pub owner: AccountOwner,
     pub market_id: String,
     pub outcome_id: String,
     pub amount: u64,
@@ -70,33 +68,35 @@ pub struct Bet {
 
 /// Root application state
 #[derive(RootView)]
-#[view(context = "ViewStorageContext")]
+#[view(context = ViewStorageContext)]
 pub struct CascadeProtocol {
     /// Admin account that can resolve markets
-    pub admin: RegisterView<ViewStorageContext, Option<Owner>>,
+    pub admin: RegisterView<Option<AccountOwner>>,
     
     /// Counter for generating unique IDs
-    pub id_counter: RegisterView<ViewStorageContext, u64>,
+    pub id_counter: RegisterView<u64>,
     
     /// All markets indexed by market ID
-    pub markets: MapView<ViewStorageContext, String, Market>,
+    pub markets: MapView<String, Market>,
     
     /// All bets indexed by owner, then by bet ID
-    pub bets_by_owner: MapView<ViewStorageContext, Owner, Vec<Bet>>,
+    pub bets_by_owner: MapView<AccountOwner, Vec<Bet>>,
     
     /// All bets indexed by market ID for efficient lookups
-    pub bets_by_market: MapView<ViewStorageContext, String, Vec<Bet>>,
+    pub bets_by_market: MapView<String, Vec<Bet>>,
 }
 
 #[Object]
 impl CascadeProtocol {
     /// Get all markets
     async fn markets(&self) -> Result<Vec<Market>, ViewError> {
-        let mut result = Vec::new();
-        self.markets.for_each_index_value(|_, market| {
-            result.push(market.clone());
-            Ok(())
-        }).await?;
+        let mut result: Vec<Market> = Vec::new();
+        self.markets
+            .for_each_index_value(|_, market| {
+                result.push(market.into_owned());
+                Ok(())
+            })
+            .await?;
         Ok(result)
     }
     
@@ -106,7 +106,7 @@ impl CascadeProtocol {
     }
     
     /// Get all bets for a specific owner
-    async fn bets_for_owner(&self, owner: Owner) -> Result<Vec<Bet>, ViewError> {
+    async fn bets_for_owner(&self, owner: AccountOwner) -> Result<Vec<Bet>, ViewError> {
         match self.bets_by_owner.get(&owner).await? {
             Some(bets) => Ok(bets),
             None => Ok(Vec::new()),
@@ -122,7 +122,7 @@ impl CascadeProtocol {
     }
     
     /// Get the current admin
-    async fn admin(&self) -> Result<Option<Owner>, ViewError> {
+    async fn admin(&self) -> Result<Option<AccountOwner>, ViewError> {
         Ok(self.admin.get().clone())
     }
 }

@@ -1,5 +1,5 @@
 use async_graphql::{EmptyMutation, EmptySubscription, Request, Response, Schema};
-use linera_sdk::{base::WithServiceAbi, views::View, Service, ServiceRuntime};
+use linera_sdk::{views::View, Service, ServiceRuntime};
 
 use crate::state::CascadeProtocol;
 
@@ -10,7 +10,7 @@ pub struct CascadeProtocolService {
 
  
 
-impl WithServiceAbi for CascadeProtocolService {
+impl linera_sdk::abi::WithServiceAbi for CascadeProtocolService {
     type Abi = crate::CascadeProtocolAbi;
 }
 
@@ -40,7 +40,6 @@ mod tests {
         state::{Market, MarketStatus, Outcome},
         msg::MarketCategory,
     };
-    use linera_sdk::base::Owner;
 
     // Note: These are placeholder tests. In a real implementation,
     // you would need to set up proper test fixtures with mock runtime.

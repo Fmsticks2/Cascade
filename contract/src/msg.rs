@@ -1,4 +1,4 @@
-use linera_sdk::base::Owner;
+use linera_sdk::linera_base_types::AccountOwner;
 use async_graphql::Enum;
 use serde::{Deserialize, Serialize};
 
@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstantiationArgument {
     /// The admin who can resolve markets
-    pub admin: Owner,
+    pub admin: AccountOwner,
 }
 
 /// Market category classification

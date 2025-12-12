@@ -13,9 +13,11 @@ pub use service::CascadeProtocolService;
 pub use state::CascadeProtocol;
 
 // Register the contract implementation
+#[cfg(feature = "contract")]
 linera_sdk::contract!(CascadeProtocolContract);
 
 // Register the service implementation
+#[cfg(feature = "service")]
 linera_sdk::service!(CascadeProtocolService);
 
 pub struct CascadeProtocolAbi;
