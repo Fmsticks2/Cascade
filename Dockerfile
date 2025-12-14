@@ -6,12 +6,19 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     protobuf-compiler \
     clang \
-    make
+    make \
+    git \
+    curl \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN cargo install --locked linera@0.15.5 linera-service@0.15.5 linera-storage-service@0.15.5
+# Build Linera CLI and services from the upstream repository.
+# so we compile the CLI and services from the official source instead.
+RUN git clone https://github.com/linera-io/linera-protocol.git /linera \
+ && cd /linera \
+ && cargo build -p linera-storage-service -p linera-service --bins \
+ && cp target/debug/linera* /usr/local/cargo/bin/
 RUN rustup target add wasm32-unknown-unknown
 
-RUN apt-get install -y curl
 RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.40.3/install.sh | bash \
     && . ~/.nvm/nvm.sh \
     && nvm install lts/krypton \
