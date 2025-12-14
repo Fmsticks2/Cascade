@@ -11,12 +11,7 @@ RUN apt-get update && apt-get install -y \
     curl \
  && rm -rf /var/lib/apt/lists/*
 
-# Build Linera CLI and services from the upstream repository.
-# so we compile the CLI and services from the official source instead.
-RUN git clone https://github.com/linera-io/linera-protocol.git /linera \
- && cd /linera \
- && cargo build -p linera-storage-service -p linera-service --bins \
- && cp target/debug/linera* /usr/local/cargo/bin/
+RUN cargo install --locked linera-service@0.15.5 linera-storage-service@0.15.5
 RUN rustup target add wasm32-unknown-unknown
 
 RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.40.3/install.sh | bash \

@@ -5,9 +5,17 @@ MODE="${DEPLOY_MODE:-${1:-local}}"
 WEB_PORT="${WEB_PORT:-4173}"
 FAUCET_PORT="${FAUCET_PORT:-18080}"
 
-export LINERA_WALLET="/build/linera-cli/wallet.json"
-export LINERA_KEYSTORE="/build/linera-cli/keystore.json"
-export LINERA_STORAGE="rocksdb:/build/linera-cli/linera.db"
+if [ "$MODE" = "local" ]; then
+  export LINERA_WALLET="/build/linera-cli/wallet.json"
+  export LINERA_KEYSTORE="/build/linera-cli/keystore.json"
+  export LINERA_STORAGE="rocksdb:/build/linera-cli/linera.db"
+else
+  export LINERA_TMP_DIR="/tmp/linera-cli"
+  mkdir -p "$LINERA_TMP_DIR"
+  export LINERA_WALLET="$LINERA_TMP_DIR/wallet.json"
+  export LINERA_KEYSTORE="$LINERA_TMP_DIR/keystore.json"
+  export LINERA_STORAGE="rocksdb:$LINERA_TMP_DIR/linera.db"
+fi
 
 cd /build/contract
 rustup target add wasm32-unknown-unknown >/dev/null 2>&1 || true
@@ -74,19 +82,8 @@ export NVM_DIR="/root/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" || true
 nvm --version >/dev/null 2>&1 || echo "NVM not found; continuing"
 nvm use --lts >/dev/null 2>&1 || nvm use lts/krypton >/dev/null 2>&1 || nvm use default >/dev/null 2>&1 || true
-PNPM_BIN=$(command -v pnpm || true)
-[ -z "$PNPM_BIN" ] && PNPM_BIN=$(find "$NVM_DIR" -type f -name pnpm | head -n 1 || true)
-NPX_BIN=$(command -v npx || true)
 echo "Starting frontend dependency install"
-if [ -n "$PNPM_BIN" ]; then
-  "$PNPM_BIN" install || true
-else
-  if [ -n "$NPX_BIN" ]; then
-    "$NPX_BIN" --yes pnpm install || npm install || true
-  else
-    npm install || true
-  fi
-fi
+npm install || true
 for i in $(seq 1 30); do curl -sf "$FAUCET_URL" >/dev/null && break || sleep 1; done
 echo "Starting frontend build and preview"
 echo "Frontend: http://localhost:$WEB_PORT"

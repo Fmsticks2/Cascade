@@ -1,20 +1,22 @@
 {
   "chains": {
-    "1a4a5c668f5c74bf7f1ab875d647a220c5fa9f06279f81c9237357e91984a11a": {
-      "chain_id": "1a4a5c668f5c74bf7f1ab875d647a220c5fa9f06279f81c9237357e91984a11a",
-      "owner": "0xb4a7b750486521bdd2a4e3877a99f41c7cec9348cadbf170273a70c8d21b7fe8",
-      "block_hash": "325bc4b5c5213b7ba0bf441dedc06f6f59b8f9c9f0ea64e7f9b48cd58039340d",
-      "timestamp": 1764435362565201,
-      "next_block_height": 1,
-      "pending_proposal": null
-    },
     "af5c1947b384b4df97425e3f3d71a005f962f65d00062b789c90d09c0e06cb5e": {
-      "chain_id": "af5c1947b384b4df97425e3f3d71a005f962f65d00062b789c90d09c0e06cb5e",
       "owner": null,
       "block_hash": null,
-      "timestamp": 1764435355519350,
       "next_block_height": 0,
-      "pending_proposal": null
+      "timestamp": 1764435355519350,
+      "pending_proposal": null,
+      "epoch": null,
+      "follow_only": false
+    },
+    "1a4a5c668f5c74bf7f1ab875d647a220c5fa9f06279f81c9237357e91984a11a": {
+      "owner": "0xb4a7b750486521bdd2a4e3877a99f41c7cec9348cadbf170273a70c8d21b7fe8",
+      "block_hash": "325bc4b5c5213b7ba0bf441dedc06f6f59b8f9c9f0ea64e7f9b48cd58039340d",
+      "next_block_height": 1,
+      "timestamp": 1764435362565201,
+      "pending_proposal": null,
+      "epoch": null,
+      "follow_only": false
     }
   },
   "default": "1a4a5c668f5c74bf7f1ab875d647a220c5fa9f06279f81c9237357e91984a11a",
@@ -82,6 +84,7 @@
             "owners": {
               "0x1fd484fbefaab01c9ef5a2c9f9986f390161469eab5c9f8025710bd6729fcaae": 100
             },
+            "first_leader": null,
             "multi_leader_rounds": 2,
             "open_multi_leader_rounds": false,
             "timeout_config": {
@@ -116,6 +119,7 @@
             "owners": {
               "0xf017c3254fdec98bfa0cd5221a8a498dae6ed513c682ee727bf0069742341570": 100
             },
+            "first_leader": null,
             "multi_leader_rounds": 2,
             "open_multi_leader_rounds": false,
             "timeout_config": {
@@ -150,6 +154,7 @@
             "owners": {
               "0xb65e419958082a510db5f2236e0287f634f803e61e3b84bf8339d6505ddbeeac": 100
             },
+            "first_leader": null,
             "multi_leader_rounds": 2,
             "open_multi_leader_rounds": false,
             "timeout_config": {
